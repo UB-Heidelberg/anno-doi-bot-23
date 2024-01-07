@@ -1,0 +1,113 @@
+#!/bin/bash
+# -*- coding: utf-8, tab-width: 2 -*-
+
+
+function scan_and_assign () {
+  exec </dev/null
+  setup_logfile_tee || return $?
+
+  local RSS_URL="${CFG[anno_baseurl]}by/has_stamp;rss=vh/_ubhd:doiAssign"
+  logts P: "Scan RSS feed: $RSS_URL"
+  local RSS_LINKS=()
+  readarray -t RSS_LINKS < <(webfetch "$RSS_URL" | grep -oPe '<link>[^<>]+')
+
+  local MANDATORY_VH_ENTRY_FIELDS=(
+    id
+    created
+    )
+  local VH_LINK=
+  local ERR_CNT=0
+  for VH_LINK in "${RSS_LINKS[@]}"; do
+    VH_LINK="${VH_LINK#*>}"
+    scan_and_assign__found_link && continue
+    echo W: "$FUNCNAME: Failure (rv=$?) for VH link: $VH_LINK" >&2
+    (( ERR_CNT += 1 ))
+  done
+
+  [ "$ERR_CNT" == 0 ] || return 4$(
+    echo E: "$FUNCNAME: Encountered problems with $ERR_CNT VH links." >&2)
+  logts P: Success.
+}
+
+
+function scan_and_assign__found_link () {
+  logts P: "Follow VH link: $VH_LINK"
+  [[ "$VH_LINK" == "${CFG[anno_baseurl]}"* ]] || return 3$(
+    echo E: 'Link not inside base URL!' >&2)
+
+  local RGX='/([A-Za-z0-9_.-]+)/versions$'
+  local ANNO_BASE_ID=
+  [[ "$VH_LINK" =~ $RGX ]] && ANNO_BASE_ID="${BASH_REMATCH[1]}"
+  [ -n "$ANNO_BASE_ID" ] || return 5$(
+    echo E: "Failed to detect anno base ID from VH link." >&2)
+
+  local ORIG_VH_REPLY="$(webfetch "$VH_LINK")"
+  # log_dump <<<"$ORIG_VH_REPLY" "vh-reply.$ANNO_BASE_ID.json" || return $?
+
+  local LIST=()
+  readarray -t LIST < <(runjs DATA="$ORIG_VH_REPLY" \
+    CODE='data.first.items.forEach(x => clog(toBashDictSp(x)));'
+    ) || return 6$(echo E: "Failed to parse VH reply." >&2)
+
+  local -A VH_INFO=()
+  local VHE_NUM=0 VH_ACCUM=
+  for DATA in "${LIST[@]}"; do
+    VH_INFO=()
+    eval "VH_INFO=( $DATA )"
+    # ^-- e.g. [created]=2023-06…Z [as:deleted]=2023-09…Z [id]='http://…~3'
+    # echo D: "  >> VH entry: $DATA <<"
+    DATA=
+    (( VHE_NUM += 1 ))
+    scan_and_assign__vh_entry || return $?$(
+      echo E: "Scanning version history failed:" \
+        "Error while processing VH entry #$VHE_NUM" >&2)
+  done
+  [ "$VHE_NUM" -ge 1 ] || return 4$(echo E: 'Found no VH entries.' >&2)
+
+  VH_ACCUM="[$VH_ACCUM]"
+  local ACCUM_DUMP="${CFG[doibot_log_dest_dir]}/vh-accum.$ANNO_BASE_ID.json"
+  echo "$VH_ACCUM" >"$ACCUM_DUMP" || return 5$(
+    echo E: 'Failed to dump the accumulated VH.' >&2)
+}
+
+
+function scan_and_assign__vh_entry () {
+  local KEY= VAL=
+  for KEY in "${MANDATORY_VH_ENTRY_FIELDS[@]}"; do
+    [ -n "${VH_INFO[$KEY]}" ] || return 4$(
+      echo E: "Entry has no '$KEY' field!" >&2)
+  done
+
+  local ANNO_ID_URL="${VH_INFO[id]}"
+  local EXPECTED_SUFFIX="/$ANNO_BASE_ID~$VHE_NUM"
+  [[ "$ANNO_ID_URL" == *"$EXPECTED_SUFFIX" ]] || return 6$(
+    echo E: "Unexpected anno ID URL (expected suffix '$EXPECTED_SUFFIX'):" \
+      "$ANNO_ID_URL" >&2)
+
+  [ -z "$VH_ACCUM" ] || VH_ACCUM+=$',\n'
+  if [ -n "${VH_INFO[as:deleted]}" ]; then
+    echo P: "  • entry #$VHE_NUM: retracted. skip."
+    VH_ACCUM+='false'
+    return 0
+  fi
+
+  echo P: "  • entry #$VHE_NUM: download…"
+
+  local ANNO_JSON="$(webfetch "$ANNO_ID_URL")"
+  [ -n "$ANNO_JSON" ] || return 6$(
+    echo E: "Failed to request anno: $ANNO_ID_URL" >&2)
+  # log_dump <<<"$ANNO_JSON" "anno.$ANNO_BASE_ID~$VHE_NUM.json" || return $?
+  VH_ACCUM+="$ANNO_JSON"
+}
+
+
+
+
+
+
+
+
+
+
+
+return 0

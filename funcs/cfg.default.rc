@@ -1,0 +1,4 @@
+# -*- coding: utf-8, tab-width: 2 -*-
+
+CFG[doibot_log_dest_dir]="logs.@$HOSTNAME/$(date +%y%m)"
+CFG[anno_baseurl]='http://localhost:33321/anno/'
