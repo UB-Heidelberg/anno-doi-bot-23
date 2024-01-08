@@ -16,6 +16,7 @@ function scan_and_assign () {
     created
     )
   local VH_LINK=
+  local N_RSS_LINKS="${#RSS_LINKS[@]}"
   local ERR_CNT=0
   for VH_LINK in "${RSS_LINKS[@]}"; do
     VH_LINK="${VH_LINK#*>}"
@@ -26,7 +27,7 @@ function scan_and_assign () {
 
   [ "$ERR_CNT" == 0 ] || return 4$(
     echo E: "$FUNCNAME: Encountered problems with $ERR_CNT VH links." >&2)
-  logts P: Success.
+  logts P: "Success. Processed $N_RSS_LINKS VH links."
 }
 
 
@@ -50,7 +51,9 @@ function scan_and_assign__found_link () {
     ) || return 6$(echo E: "Failed to parse VH reply." >&2)
 
   local -A VH_INFO=()
-  local VHE_NUM=0 VH_ACCUM=
+  # local VH_ACCUM=
+  local FIRST_CREATED=
+  local VHE_NUM=0
   for DATA in "${LIST[@]}"; do
     VH_INFO=()
     eval "VH_INFO=( $DATA )"
@@ -64,10 +67,10 @@ function scan_and_assign__found_link () {
   done
   [ "$VHE_NUM" -ge 1 ] || return 4$(echo E: 'Found no VH entries.' >&2)
 
-  VH_ACCUM="[$VH_ACCUM]"
-  local ACCUM_DUMP="${CFG[doibot_log_dest_dir]}/vh-accum.$ANNO_BASE_ID.json"
-  echo "$VH_ACCUM" >"$ACCUM_DUMP" || return 5$(
-    echo E: 'Failed to dump the accumulated VH.' >&2)
+  # VH_ACCUM="[$VH_ACCUM]"
+  # local ACCUM_DUMP="${CFG[doibot_log_dest_dir]}/vh-accum.$ANNO_BASE_ID.json"
+  # echo "$VH_ACCUM" >"$ACCUM_DUMP" || return 5$(
+  #   echo E: 'Failed to dump the accumulated VH.' >&2)
 }
 
 
@@ -84,20 +87,61 @@ function scan_and_assign__vh_entry () {
     echo E: "Unexpected anno ID URL (expected suffix '$EXPECTED_SUFFIX'):" \
       "$ANNO_ID_URL" >&2)
 
-  [ -z "$VH_ACCUM" ] || VH_ACCUM+=$',\n'
+  [ -n "$FIRST_CREATED" ] || FIRST_CREATED="${VH_INFO[created]}"
+
+  # [ -z "$VH_ACCUM" ] || VH_ACCUM+=$',\n'
   if [ -n "${VH_INFO[as:deleted]}" ]; then
     echo P: "  • entry #$VHE_NUM: retracted. skip."
-    VH_ACCUM+='false'
+    # VH_ACCUM+='false'
     return 0
   fi
 
   echo P: "  • entry #$VHE_NUM: download…"
-
   local ANNO_JSON="$(webfetch "$ANNO_ID_URL")"
   [ -n "$ANNO_JSON" ] || return 6$(
     echo E: "Failed to request anno: $ANNO_ID_URL" >&2)
   # log_dump <<<"$ANNO_JSON" "anno.$ANNO_BASE_ID~$VHE_NUM.json" || return $?
-  VH_ACCUM+="$ANNO_JSON"
+  scan_and_assign__reg_one_doi || return $?
+
+  # VH_ACCUM+="$ANNO_JSON"
+}
+
+
+function scan_and_assign__reg_one_doi () {
+  echo P: '    • invoking adapter.'
+  local REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
+    )${CFG[anno_doi_versep]}$VHE_NUM${CFG[anno_doi_suffix]}"
+  local REG_CMD=(
+    env_export_anno_cfg env
+    anno_initial_version_date="$FIRST_CREATED"
+    # anno_base_id="$ANNO_BASE_ID"
+    # anno_ver_num="$VHE_NUM"
+    anno_doi_expect="$REG_DOI"
+    "${CFG[doibot_adapter_prog]}"
+    ${CFG[doibot_adapter_args]}
+    )
+  local REG_MSG= REG_RV= # pre-declare
+  REG_MSG="$(<<<"$ANNO_JSON" "${REG_CMD[@]}" 2>&1)"; REG_RV=$?
+  local LAST_LINE="${REG_MSG##*$'\n'}"
+  local DOI_NS='urn:doi:'
+  local LL_EXPECTED="+OK reg/upd <$DOI_NS$REG_DOI>"
+  case "$REG_RV:$LAST_LINE" in
+    "0:$LL_EXPECTED" )
+      echo P: "    • adapter succeeded. <$DOI_NS$REG_DOI>"
+      return 0;;
+    "0:+OK reg/upd <$DOI_NS"*'>' )
+      echo E: "Adapter says it has registered this (wrong) DOI:" \
+        "<${LAST_LINE#*<}, expected: <$DOI_NS$REG_DOI>" >&2
+      return 6;;
+  esac
+  if [ -n "$REG_MSG" ]; then
+    echo E: "    • adapter failed with exit code $REG_RV and this message:" >&2
+    nl -ba <<<"$REG_MSG" | sed -re 's~^~E: > ~' >&2
+    echo E: $'Expected:\t'"$LL_EXPECTED"
+  else
+    echo E: "    • adapter silently failed with exit code $REG_RV." >&2
+  fi
+  return "$REG_RV"
 }
 
 

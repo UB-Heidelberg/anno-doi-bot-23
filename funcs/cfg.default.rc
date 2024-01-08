@@ -1,4 +1,12 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 CFG[doibot_log_dest_dir]="logs.@$HOSTNAME/$(date +%y%m)"
+
 CFG[anno_baseurl]='http://localhost:33321/anno/'
+CFG[anno_doi_prefix]='0.0/no-doi-prefix.'
+CFG[anno_doi_versep]='_'
+CFG[anno_doi_suffix]=''
+
+CFG[doibot_adapter_name]='gxdebug'
+CFG[doibot_adapter_prog]="$BOT_PATH/util/adapter_gxdebug.sh"
+CFG[doibot_adapter_args]='update_doi_meta_for_one_anno_on_stdin'
