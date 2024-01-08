@@ -136,9 +136,11 @@ function scan_and_assign__reg_one_doi () {
   local LL_EXPECTED="+OK reg/upd <$DOI_NS$REG_DOI>"
   case "$REG_RV:$LAST_LINE" in
     "0:$LL_EXPECTED" )
+      scan_and_assign__report_warnings "${REG_MSG%$'\n'*}"
       echo P: "    • adapter succeeded. <$DOI_NS$REG_DOI>"
       return 0;;
     "0:+OK reg/upd <$DOI_NS"*'>' )
+      scan_and_assign__report_warnings "${REG_MSG%$'\n'*}"
       echo E: "Adapter says it has registered this (wrong) DOI:" \
         "<${LAST_LINE#*<}, expected: <$DOI_NS$REG_DOI>" >&2
       return 6;;
@@ -164,6 +166,17 @@ function stamp_newly_registered_dois () {
     echo P: "  • submit DOI stamp for version $ANNO_VER_NUM: $DOI"
     echo W: 'stub!'
   done
+}
+
+
+function scan_and_assign__report_warnings () {
+  local MSG="$1"
+  case $'\n'"$MSG" in
+    *$'\n'[EW]:* )
+      echo W: "    • adapter output seems to include warnings:" >&2
+      <<<"$MSG" sed -re '/^P: /d' | nl -ba | sed -re 's~^~W: > ~' >&2
+      ;;
+  esac
 }
 
 
