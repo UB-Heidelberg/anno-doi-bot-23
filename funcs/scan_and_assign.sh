@@ -53,7 +53,8 @@ function scan_and_assign__found_link () {
   local -A VH_INFO=()
   # local VH_ACCUM=
   local FIRST_CREATED=
-  local VHE_NUM=0
+  local VHE_NUM=0 VH_LENGTH="${#LIST[@]}"
+  local -A TO_BE_DOI_STAMPED_VER_NUMS=()
   for DATA in "${LIST[@]}"; do
     VH_INFO=()
     eval "VH_INFO=( $DATA )"
@@ -66,6 +67,7 @@ function scan_and_assign__found_link () {
         "Error while processing VH entry #$VHE_NUM" >&2)
   done
   [ "$VHE_NUM" -ge 1 ] || return 4$(echo E: 'Found no VH entries.' >&2)
+  stamp_newly_registered_dois || return $?
 
   # VH_ACCUM="[$VH_ACCUM]"
   # local ACCUM_DUMP="${CFG[doibot_log_dest_dir]}/vh-accum.$ANNO_BASE_ID.json"
@@ -101,16 +103,23 @@ function scan_and_assign__vh_entry () {
   [ -n "$ANNO_JSON" ] || return 6$(
     echo E: "Failed to request anno: $ANNO_ID_URL" >&2)
   # log_dump <<<"$ANNO_JSON" "anno.$ANNO_BASE_ID~$VHE_NUM.json" || return $?
+
+  local OLD_DOI="${VH_INFO[dc:identifier]}"
+  if [ -n "$OLD_DOI" ]; then
+    echo P: "    • adapter: update existing DOI: <$OLD_DOI>"
+  else
+    echo P: "    • adapter: register new DOI:"
+  fi
+  local REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
+    )${CFG[anno_doi_versep]}$VHE_NUM${CFG[anno_doi_suffix]}"
   scan_and_assign__reg_one_doi || return $?
 
+  [ -n "$OLD_DOI" ] || TO_BE_DOI_STAMPED_VER_NUMS["$VHE_NUM"]="$REG_DOI"
   # VH_ACCUM+="$ANNO_JSON"
 }
 
 
 function scan_and_assign__reg_one_doi () {
-  echo P: '    • invoking adapter.'
-  local REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
-    )${CFG[anno_doi_versep]}$VHE_NUM${CFG[anno_doi_suffix]}"
   local REG_CMD=(
     env_export_anno_cfg env
     anno_initial_version_date="$FIRST_CREATED"
@@ -142,6 +151,19 @@ function scan_and_assign__reg_one_doi () {
     echo E: "    • adapter silently failed with exit code $REG_RV." >&2
   fi
   return "$REG_RV"
+}
+
+
+function stamp_newly_registered_dois () {
+  local ANNO_VER_NUM=0 DOI=
+  while [ "$ANNO_VER_NUM" -lt "$VH_LENGTH" ]; do
+    (( ANNO_VER_NUM += 1 ))
+    DOI="${TO_BE_DOI_STAMPED_VER_NUMS[$ANNO_VER_NUM]}"
+    [ -n "$DOI" ] || continue
+    # dc:identifier = https://doi.org/$DOI"
+    echo P: "  • submit DOI stamp for version $ANNO_VER_NUM: $DOI"
+    echo W: 'stub!'
+  done
 }
 
 
