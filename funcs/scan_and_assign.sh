@@ -3,9 +3,6 @@
 
 
 function scan_and_assign () {
-  exec </dev/null
-  setup_logfile_tee || return $?
-
   local RSS_URL="${CFG[anno_baseurl]}by/has_stamp;rss=vh/_ubhd:doiAssign"
   logts P: "Scan RSS feed: $RSS_URL"
   local RSS_LINKS=()
