@@ -6,7 +6,7 @@ function load_host_config () {
   local CFG_TOPIC="$1"
   echo P: "Reading config file(s) for host ${HOSTNAME:-<?none?>}."
   local ITEM=
-  for ITEM in cfg.@"$HOSTNAME"{/*,.*,}.rc; do
+  for ITEM in {config,cfg.@"$HOSTNAME"}{/*,.*,}.rc; do
     [ ! -f "$ITEM" ] || source_in_func "$ITEM" cfg:"$CFG_TOPIC" || return $?
   done
 }
