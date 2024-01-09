@@ -10,3 +10,5 @@ CFG[anno_doi_suffix]=''
 CFG[doibot_adapter_name]='gxdebug'
 CFG[doibot_adapter_prog]="$BOT_PATH/util/adapter_gxdebug.sh"
 CFG[doibot_adapter_args]='update_doi_meta_for_one_anno_on_stdin'
+
+eval "$DOCKER_DOIBOT_CFG_OVERRIDES"
