@@ -6,7 +6,7 @@ function setup_logfile_tee () {
   local LOGS_DIR="${CFG[doibot_log_dest_dir]}"
   mkdir --parents -- "$LOGS_DIR"
   local DEST="$LOGS_DIR/$LOG_TOPIC.$(
-    printf '%(%y%m%d-%H%M%S)T' -1).$$.log"
+    printf '%(%y%m%d-%H%M%S)T' -1).$$.txt"
   echo D: "Log file will be: $DEST"
   >>"$DEST" || return $?$(
     echo E: "Failed write-append test for logfile: $DEST" >&2)
