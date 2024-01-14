@@ -10,8 +10,11 @@ function setup_logfile_tee () {
   echo D: "Log file will be: $DEST"
   >>"$DEST" || return $?$(
     echo E: "Failed write-append test for logfile: $DEST" >&2)
-  rechown_logsdir || return $?
-  exec &> >(stdbuf -o0 -e0 tee -- "$DEST")
+  rechown_logsdir || return $?$(
+    echo E: "Failed to re-chown logfiles" >&2)
+  exec 4>&1
+  exec &> >(exec stdbuf -o0 -e0 tee -- "$DEST" >&4) || return $?$(
+    echo E: "Failed to start log tee" >&2)
 }
 
 

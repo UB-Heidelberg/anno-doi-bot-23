@@ -74,14 +74,18 @@ function scan_and_assign__found_link () {
 
 
 function scan_and_assign__vh_entry () {
+  local TRACE_ENT="entry #$VHE_NUM"
   local KEY= VAL=
   for KEY in "${MANDATORY_VH_ENTRY_FIELDS[@]}"; do
     [ -n "${VH_INFO[$KEY]}" ] || return 4$(
-      echo E: "Entry has no '$KEY' field!" >&2)
+      echo E: "$TRACE_ENT has no '$KEY' field!" >&2)
   done
 
   local ANNO_ID_URL="${VH_INFO[id]}"
-  local EXPECTED_SUFFIX="/$ANNO_BASE_ID~$VHE_NUM"
+  local ANNO_VER_NUM="$(detect_anno_ver_num_from_id_url "$ANNO_ID_URL")"
+  [ -n "$ANNO_VER_NUM" ] || return 4
+
+  local EXPECTED_SUFFIX="/$ANNO_BASE_ID${CFG[anno_url_versep]}$ANNO_VER_NUM"
   [[ "$ANNO_ID_URL" == *"$EXPECTED_SUFFIX" ]] || return 6$(
     echo E: "Unexpected anno ID URL (expected suffix '$EXPECTED_SUFFIX'):" \
       "$ANNO_ID_URL" >&2)
@@ -90,12 +94,12 @@ function scan_and_assign__vh_entry () {
 
   # [ -z "$VH_ACCUM" ] || VH_ACCUM+=$',\n'
   if [ -n "${VH_INFO[as:deleted]}" ]; then
-    echo P: "  • entry #$VHE_NUM: retracted. skip."
+    echo P: "  • $TRACE_ENT: retracted. skip."
     # VH_ACCUM+='false'
     return 0
   fi
 
-  echo P: "  • entry #$VHE_NUM: download…"
+  echo P: "  • $TRACE_ENT: download…"
   local ANNO_JSON="$(webfetch "$ANNO_ID_URL")"
   [ -n "$ANNO_JSON" ] || return 6$(
     echo E: "Failed to request anno: $ANNO_ID_URL" >&2)
@@ -108,7 +112,7 @@ function scan_and_assign__vh_entry () {
     echo P: "    • adapter: register new DOI:"
   fi
   local REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
-    )${CFG[anno_doi_versep]}$VHE_NUM${CFG[anno_doi_suffix]}"
+    )${CFG[anno_doi_versep]}$ANNO_VER_NUM${CFG[anno_doi_suffix]}"
   scan_and_assign__reg_one_doi || return $?
 
   [ -n "$OLD_DOI" ] || TO_BE_DOI_STAMPED_VER_NUMS["$VHE_NUM"]="$REG_DOI"
@@ -154,13 +158,13 @@ function scan_and_assign__reg_one_doi () {
 
 
 function stamp_newly_registered_dois () {
-  local ANNO_VER_NUM=0 DOI=
-  while [ "$ANNO_VER_NUM" -lt "$VH_LENGTH" ]; do
-    (( ANNO_VER_NUM += 1 ))
-    DOI="${TO_BE_DOI_STAMPED_VER_NUMS[$ANNO_VER_NUM]}"
+  local VHE_NUM=0 DOI=
+  while [ "$VHE_NUM" -lt "$VH_LENGTH" ]; do
+    (( VHE_NUM += 1 ))
+    DOI="${TO_BE_DOI_STAMPED_VER_NUMS[$VHE_NUM]}"
     [ -n "$DOI" ] || continue
     # dc:identifier = https://doi.org/$DOI"
-    echo P: "  • submit DOI stamp for version $ANNO_VER_NUM: $DOI"
+    echo P: "  • submit DOI stamp for entry #$VHE_NUM: $DOI"
     echo W: 'stub!'
   done
 }
