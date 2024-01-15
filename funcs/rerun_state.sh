@@ -45,7 +45,7 @@ function wait_until_uts () {
   local WAIT=$(( UNTIL - EPOCHSECONDS ))
   [ "${WAIT:-0}" -ge 1 ] || return 0
   logts P: "Gonna wait $WAIT seconds (until $(
-    printf '%(%F %T)T' "$UNTIL")) $*"
+    printf '%(%F %T %Z)T' "$UNTIL")) $*"
   sleep "$WAIT"s
 }
 
@@ -71,7 +71,7 @@ function with_rerun_state__inner_fail_score () {
     echo W: "Cumulative fail score increased to $FAIL_SCORE." >&2
   fi
   [ -z "$WAIT" ] || echo D: "Schedule for earliest next run is set to $(
-    printf '%(%F %T)T' "$WAIT")."
+    printf '%(%F %T %Z)T' "$WAIT")."
 }
 
 

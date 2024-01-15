@@ -9,7 +9,7 @@ function log_dump () {
 
 
 function logts () {
-  printf '%s %(%F %T)T ' "$1" -1; shift
+  printf '%s [%(%F %T %Z)T] ' "$1" -1; shift
   echo "$*"
 }
 
