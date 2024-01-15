@@ -8,7 +8,7 @@ function cron_task () {
   cron_task__setup_npm_bin_paths || return $?
 
   local RV=0
-  scan_and_assign || RV+=4
+  with_rerun_state_fail_score scan_and_assign || RV+=4
 
   # generate_rss_reports || RV+=4
 

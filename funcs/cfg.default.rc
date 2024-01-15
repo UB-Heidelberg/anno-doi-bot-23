@@ -1,6 +1,18 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 CFG[doibot_log_dest_dir]="logs.@$HOSTNAME/$(date +%y%m)"
+CFG[doibot_rerun_state_dir]="logs.@$HOSTNAME/rerun_state"
+
+CFG[doibot_rerun_min_delay]='0 days 0 hours 10 minutes 0 seconds'
+# If for some reason your scheduling mechanism¹ fires the cron task
+# too early, you can use this minimum delay to have the bot sleep
+# before doing its actual work.
+#
+# (¹ In `docker-compose` without a docker swarm your scheduling options
+# may be limited to immediate restart. You may be able to abuse delayed
+# restart on failure by always failing, but that way your docker
+# monitoring software will always have the failed container.)
+
 
 CFG[anno_url_versep]='~'
 
