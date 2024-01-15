@@ -43,7 +43,7 @@ function scan_and_assign__found_link () {
   # echo "$ORIG_VH_REPLY" | log_dump "vh-reply.$ANNO_BASE_ID.json" || return $?
 
   local LIST=()
-  readarray -t LIST < <(runjs DATA="$ORIG_VH_REPLY" \
+  readarray -t LIST < <(runjs_eval DATA="$ORIG_VH_REPLY" \
     CODE='data.first.items.forEach(x => clog(toBashDictSp(x)));'
     ) || return 6$(echo E: "Failed to parse VH reply." >&2)
 
