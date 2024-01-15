@@ -5,8 +5,13 @@
 function scan_and_assign () {
   local RSS_URL="${CFG[anno_baseurl]}by/has_stamp;rss=vh/_ubhd:doiAssign"
   logts P: "Scan RSS feed: $RSS_URL"
+  local RSS_XML="$(webfetch "$RSS_URL" | tr -s '\r\n \t' ' ')"
+  case "$RSS_XML" in
+    *'<rss '*'>'*'<channel>'*'</channel>'*'</rss>'* ) ;;
+    * ) echo E: "No RSS channel in feed response." >&2; return 2;;
+  esac
   local RSS_LINKS=()
-  readarray -t RSS_LINKS < <(webfetch "$RSS_URL" | grep -oPe '<link>[^<>]+')
+  readarray -t RSS_LINKS < <(<<<"$RSS_XML" grep -oPe '<link>[^<>]+')
 
   local MANDATORY_VH_ENTRY_FIELDS=(
     id
