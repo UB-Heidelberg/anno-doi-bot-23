@@ -4,6 +4,7 @@
 
 function cli_main () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
+  local DBGLV="${DEBUGLEVEL:-0}"
   local BOT_PATH="$(readlink -m -- "$BASH_SOURCE"/..)"
   local BOT_FUNCD="$BOT_PATH/funcs"
   cd -- "$BOT_PATH" || return $?
