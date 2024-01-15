@@ -2,6 +2,8 @@
 
 CFG[doibot_log_dest_dir]="logs.@$HOSTNAME/$(date +%y%m)"
 
+CFG[anno_url_versep]='~'
+
 CFG[anno_baseurl]='http://localhost:33321/anno/'
 CFG[anno_doi_prefix]='0.0/no-doi-prefix.'
 CFG[anno_doi_versep]='_'
