@@ -4,7 +4,8 @@
 
 function load_host_config () {
   local CFG_TOPIC="$1"
-  echo P: "Reading config file(s) for host ${HOSTNAME:-<?none?>}."
+  tty --silent && \
+    echo P: "Reading config file(s) for host ${HOSTNAME:-<?none?>}." >&2
   local ITEM=
   for ITEM in {config,cfg.@"$HOSTNAME"}{/*,.*,}.rc; do
     [ ! -f "$ITEM" ] || source_in_func "$ITEM" cfg:"$CFG_TOPIC" || return $?
