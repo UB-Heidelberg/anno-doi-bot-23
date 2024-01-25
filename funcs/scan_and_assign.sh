@@ -112,6 +112,7 @@ function scan_and_assign__vh_entry () {
 
   local OLD_DOI="${VH_INFO[dc:identifier]}"
   local REG_DOI="$OLD_DOI"
+  local DOI_TARGET_URL="$ANNO_ID_URL"
   if [ -n "$OLD_DOI" ]; then
     echo P: "    • adapter: update existing DOI: <$OLD_DOI>"
   else
@@ -129,12 +130,15 @@ function scan_and_assign__vh_entry () {
 function scan_and_assign__reg_one_doi () {
   [ -n "$FIRST_CREATED" ] || return 4$(
     echo E: $FUNCNAME: "Missing creation date of first anno version!" >&2)
+  [ -n "$DOI_TARGET_URL" ] || return 4$(
+    echo E: $FUNCNAME: "Missing target URL for DOI!" >&2)
   local REG_CMD=(
     env_export_anno_cfg env
     anno_initial_version_date="$FIRST_CREATED"
     # anno_base_id="$ANNO_BASE_ID"
     # anno_ver_num="$VHE_NUM"
     anno_doi_expect="$REG_DOI"
+    anno_doi_targeturl="$DOI_TARGET_URL"
     "${CFG[doibot_adapter_prog]}"
     ${CFG[doibot_adapter_args]}
     )
