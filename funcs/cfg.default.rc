@@ -21,8 +21,35 @@ CFG[anno_doi_prefix]='0.0/no-doi-prefix.'
 CFG[anno_doi_versep]='_'
 CFG[anno_doi_suffix]=''
 
-CFG[doibot_adapter_name]='gxdebug'
-CFG[doibot_adapter_prog]="$BOT_PATH/util/adapter_gxdebug.sh"
-CFG[doibot_adapter_args]='update_doi_meta_for_one_anno_on_stdin'
+
+
+CFG[doibot_adapter_name]='dummy'
+CFG[doibot_adapter_prog]='echo'
+CFG[doibot_adapter_args]='"Error from dummy registry: Denied: Not authorized"'
+
+
+
+# In an interactive desktop development environment, you may use the
+# gxdebug adapter as a GUI for deciding DOI requests:
+# CFG[doibot_adapter_name]='gxdebug'
+# CFG[doibot_adapter_prog]="$BOT_PATH/util/adapter_gxdebug.sh"
+# CFG[doibot_adapter_args]='update_doi_meta_for_one_anno_on_stdin'
+
+
 
 eval "$DOCKER_DOIBOT_CFG_OVERRIDES"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# scroll
