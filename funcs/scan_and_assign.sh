@@ -111,13 +111,14 @@ function scan_and_assign__vh_entry () {
   # log_dump <<<"$ANNO_JSON" "anno.$ANNO_BASE_ID~$VHE_NUM.json" || return $?
 
   local OLD_DOI="${VH_INFO[dc:identifier]}"
+  local REG_DOI="$OLD_DOI"
   if [ -n "$OLD_DOI" ]; then
     echo P: "    • adapter: update existing DOI: <$OLD_DOI>"
   else
     echo P: "    • adapter: register new DOI:"
+    REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
+      )${CFG[anno_doi_versep]}$ANNO_VER_NUM${CFG[anno_doi_suffix]}"
   fi
-  local REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
-    )${CFG[anno_doi_versep]}$ANNO_VER_NUM${CFG[anno_doi_suffix]}"
   scan_and_assign__reg_one_doi || return $?
 
   [ -n "$OLD_DOI" ] || TO_BE_DOI_STAMPED_VER_NUMS["$VHE_NUM"]="$REG_DOI"
