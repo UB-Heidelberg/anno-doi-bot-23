@@ -127,6 +127,8 @@ function scan_and_assign__vh_entry () {
 
 
 function scan_and_assign__reg_one_doi () {
+  [ -n "$FIRST_CREATED" ] || return 4$(
+    echo E: $FUNCNAME: "Missing creation date of first anno version!" >&2)
   local REG_CMD=(
     env_export_anno_cfg env
     anno_initial_version_date="$FIRST_CREATED"
