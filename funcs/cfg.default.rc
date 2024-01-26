@@ -17,6 +17,71 @@ CFG[doibot_rerun_min_delay]='0 days 0 hours 10 minutes 0 seconds'
 CFG[anno_url_versep]='~'
 
 CFG[anno_baseurl]='http://localhost:33321/anno/'
+CFG[doibot_useragent]='doibot23'
+
+CFG[doibot_auth_headers]='
+  REMOTE_USER       : doi_bot
+  # Authorization   : Bearer 00000000-0000-0000-0000-000000000000
+  '
+# ^-- One HTTP header per line. Header names and values are trimmed
+# of leading and trailing tab and space characters, meaning you can
+# indent them as you like and can align the colons as you like.
+# Lines with empty header name are ignored, so you can use the colon
+# for line comments, e.g. to temporarily disable a header.
+# Lines whose header name starts with `;` or `#` are ignored, too.
+#
+# !! Security Warning: !!
+# Headers configured here are sent in all stamp requests. If your
+# stamp base URL points to a server that might reply with a redirect,
+# your headers may leak credentials to servers in the redirect chain.
+
+CFG[doibot_stamp_baseurl]=''
+# ^-- When empty, `anno_baseurl` is used.
+# In most setups, we will need some kind of authorization for the
+# anno server to accept our stamp requests. This might be a base URL
+# that includes a username and password for HTTP basic auth, or a
+# base URL that bypasses the authentification.
+# An example for the latter approach is the docker-compose example
+# project in the documentation for `anno-server-22`. It uses the
+# `DOCKER_DOIBOT_CFG_OVERRIDES` line below to override this setting
+# with a URL based on the anno server's service name, which can be
+# used as a hostname inside the docker-compose network. This direct
+# access allows the DOI bot to use any username header unchallenged.
+
+CFG[doibot_stamp_http_verb]='PATCH'
+
+CFG[doibot_stamp_headers]='
+  Content-Type      : application/json
+  '
+# ^-- Same syntax as for `doibot_auth_headers`.
+
+CFG[doibot_stamp_body_template]='{"action":"addStamp","type":"dc:identifier",
+  "doi":"<°bare_doi>"}'
+# ^-- The data slot syntax is: U+003C less-than sign (<), an optional slot
+# marker (coming up next), the slot name, U+003E greater-than sign (>).
+# Available slots names:
+#   bare_doi:     The bare DOI, e.g. `10.1000/182`
+#   anno_id_url:  The annotation's ID, as a URL.
+#   anno_vers_id: The annotation's version ID.
+#   dest_url:     The target URL registered for the DOI.
+#                 Currently, this is always the same as `anno_id_url`.
+
+CFG[doibot_stamp_slot_marker]='°'
+# ^-- A sequence of UTF-8 characters that marks data slots in your
+# `doibot_stamp_body_template`.
+# If angle brackets are distinctive enough (e.g. in simple JSON payloads),
+# the marker sequeny may be empty.
+# From the "Basic Latin" block, only digits, letters and the colon are
+# allowed. (The others are reserved as potential RegExp delimiters.)
+# From other blocks, stick to symbols that are printable and have no
+# special effects.
+
+CFG[doibot_stamp_reply_grep_success]='^\{\s*"st_at":\s*"'
+CFG[doibot_stamp_reply_grep_flags]='--perl-regexp'
+# CFG[doibot_stamp_reply_grep_flags]='--fixed-strings --line-regexp'
+
+
+
 CFG[anno_doi_prefix]='0.0/no-doi-prefix.'
 CFG[anno_doi_versep]='_'
 CFG[anno_doi_suffix]=''
@@ -37,6 +102,20 @@ CFG[doibot_adapter_args]='"Error from dummy registry: Denied: Not authorized"'
 
 
 
+
+CFG[doibot_doi_safe_chars]=':~'
+# ^-- Additional characters that are acceptable in DOIs.
+# Some characters are always implicitly allowed, so you can omit them
+# from this setting. Those are: Letters (A-Za-z), digits (0-9), comma (,),
+# hyphen-minus (-), full stop (.), and slash (solidus, /) and low line (_).
+#
+# Additional characters are limited to printable characters from the
+# Unicode block Basic Latin (i.e. U+0021 to U+007E), and must not include
+# the quotation mark (") or backslash (reverse solidus, \).
+
+CFG[doibot_url_safe_chars]='!#%&()*+;=?@[]'
+# ^-- Additional characters that are acceptable in URLs, in addition to
+# all that are acceptable in DOIs. Same limitations as above.
 
 
 
