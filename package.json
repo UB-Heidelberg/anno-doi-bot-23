@@ -28,7 +28,8 @@
   "eslintConfig": { "extends": "nodejs-pmb" },
 
   "dependencies": {
-    "enveval2401-pmb": "^0.1.0"
+    "enveval2401-pmb": "^0.1.0",
+    "nodemjs": "^0.1.14"
   },
   "devDependencies": {
     "eslint-config-nodejs-pmb": "^0.3.5",
