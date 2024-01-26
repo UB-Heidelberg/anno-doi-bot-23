@@ -2,6 +2,17 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 
+function bot_init_before_config () {
+  local NMBIN="$PWD"/node_modules/.bin
+  # ^-- Using $PWD rather than $BOT_PATH to make it work in adapters
+  #     independent of their variable names.
+  if [[ ":$PATH:" != *":$NMBIN:"* ]]; then
+    PATH="$NMBIN:$PATH:"
+    export PATH
+  fi
+}
+
+
 function load_host_config () {
   local CFG_TOPIC="$1"
   tty --silent && \

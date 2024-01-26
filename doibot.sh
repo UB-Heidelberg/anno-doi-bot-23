@@ -12,6 +12,7 @@ function cli_main () {
   CFG[task]="${1:-scan_and_assign}"; shift
   source -- "$BOT_FUNCD"/bot_init.sh || return $?
   source_these_libs "$BOT_FUNCD"/*.sh || return $?
+  bot_init_before_config || return $?
   source_in_func "$BOT_FUNCD"/cfg.default.rc || return $?
   load_host_config doibot || return $?
   "${CFG[task]}" "$@" || return $?
