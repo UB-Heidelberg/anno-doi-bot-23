@@ -5,7 +5,7 @@
 function scan_and_assign () {
   local RSS_URL="${CFG[anno_baseurl]}by/has_stamp;rss=vh/_ubhd:doiAssign"
   logts P: "Scan RSS feed: $RSS_URL"
-  local RSS_XML="$(webfetch "$RSS_URL" | tr -s '\r\n \t' ' ')"
+  local RSS_XML="$(webfetch --bot-auth -- "$RSS_URL" | tr -s '\r\n \t' ' ')"
   case "$RSS_XML" in
     *'<rss '*'>'*'<channel>'*'</channel>'*'</rss>'* ) ;;
     * ) echo E: "No RSS channel in feed response." >&2; return 2;;
@@ -44,7 +44,7 @@ function scan_and_assign__found_link () {
   [ -n "$ANNO_BASE_ID" ] || return 5$(
     echo E: "Failed to detect anno base ID from VH link." >&2)
 
-  local ORIG_VH_REPLY="$(webfetch "$VH_LINK")"
+  local ORIG_VH_REPLY="$(webfetch --bot-auth -- "$VH_LINK")"
   # log_dump <<<"$ORIG_VH_REPLY" "vh-reply.$ANNO_BASE_ID.json" || return $?
 
   local LIST=()
@@ -56,7 +56,7 @@ function scan_and_assign__found_link () {
   # local VH_ACCUM=
   local FIRST_CREATED=
   local VHE_NUM=0 VH_LENGTH="${#LIST[@]}"
-  local -A TO_BE_DOI_STAMPED_VER_NUMS=()
+  local -A VHE_MEM=( [n_total_new_dois]=0 )
   for DATA in "${LIST[@]}"; do
     VH_INFO=()
     eval "VH_INFO=( $DATA )"
@@ -69,7 +69,7 @@ function scan_and_assign__found_link () {
         "Error while processing VH entry #$VHE_NUM" >&2)
   done
   [ "$VHE_NUM" -ge 1 ] || return 4$(echo E: 'Found no VH entries.' >&2)
-  stamp_newly_registered_dois || return $?
+  scan_and_assign__stamp_newly_registered_dois || return $?
 
   # VH_ACCUM="[$VH_ACCUM]"
   # local ACCUM_DUMP="${CFG[doibot_log_dest_dir]}/vh-accum.$ANNO_BASE_ID.json"
@@ -105,7 +105,7 @@ function scan_and_assign__vh_entry () {
   fi
 
   echo P: "  • $TRACE_ENT: download…"
-  local ANNO_JSON="$(webfetch "$ANNO_ID_URL")"
+  local ANNO_JSON="$(webfetch --bot-auth -- "$ANNO_ID_URL")"
   [ -n "$ANNO_JSON" ] || return 6$(
     echo E: "Failed to request anno: $ANNO_ID_URL" >&2)
   # log_dump <<<"$ANNO_JSON" "anno.$ANNO_BASE_ID~$VHE_NUM.json" || return $?
@@ -113,16 +113,19 @@ function scan_and_assign__vh_entry () {
   local OLD_DOI="${VH_INFO[dc:identifier]}"
   local REG_DOI="$OLD_DOI"
   local DOI_TARGET_URL="$ANNO_ID_URL"
+  VHE_MEM["$VHE_NUM":anno_id_url]="$ANNO_ID_URL"
+  VHE_MEM["$VHE_NUM":doi_target_url]="$DOI_TARGET_URL"
   if [ -n "$OLD_DOI" ]; then
     echo P: "    • adapter: update existing DOI: <$OLD_DOI>"
   else
     echo P: "    • adapter: register new DOI:"
     REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID$(
       )${CFG[anno_doi_versep]}$ANNO_VER_NUM${CFG[anno_doi_suffix]}"
+    VHE_MEM["$VHE_NUM":stamp_doi]="$REG_DOI"
+    (( VHE_MEM[n_total_new_dois] += 1 ))
   fi
   scan_and_assign__reg_one_doi || return $?
 
-  [ -n "$OLD_DOI" ] || TO_BE_DOI_STAMPED_VER_NUMS["$VHE_NUM"]="$REG_DOI"
   # VH_ACCUM+="$ANNO_JSON"
 }
 
@@ -169,16 +172,31 @@ function scan_and_assign__reg_one_doi () {
 }
 
 
-function stamp_newly_registered_dois () {
-  local VHE_NUM=0 DOI=
+function scan_and_assign__stamp_newly_registered_dois () {
+  local N_NEW="${VHE_MEM[n_total_new_dois]}"
+  # [ "$N_NEW" == 0 ] && return 0
+
+  echo P: "  • We need to stamp $N_NEW new DOIs."
+  local VHE_NUM=0 FAILS=0 ANNO_VERS_ID= DOI=
+  local -A STAMP_META=()
   while [ "$VHE_NUM" -lt "$VH_LENGTH" ]; do
     (( VHE_NUM += 1 ))
-    DOI="${TO_BE_DOI_STAMPED_VER_NUMS[$VHE_NUM]}"
+    DOI="${VHE_MEM["$VHE_NUM":stamp_doi]}"
     [ -n "$DOI" ] || continue
     # dc:identifier = https://doi.org/$DOI"
-    echo P: "  • submit DOI stamp for entry #$VHE_NUM: $DOI"
-    echo W: 'stub!'
+    echo P: "    • submit DOI stamp for entry #$VHE_NUM: $DOI"
+    ANNO_VERS_ID="${VHE_MEM["$VHE_NUM":anno_id_url]##*/}"
+    STAMP_META=(
+      [anno_id_url]="${VHE_MEM["$VHE_NUM":anno_id_url]}"
+      [anno_vers_id]="$ANNO_VERS_ID"
+      [bare_doi]="$DOI"
+      [dest_url]="${VHE_MEM["$VHE_NUM":doi_target_url]}"
+      )
+    stamp_one_newly_registered_doi "$ANNO_VERS_ID" "$DOI" && continue
+    echo "E: Failed to stamp anno '$ANNO_VERS_ID' with DOI '$DOI'!" >&2
+    (( FAILS += 1 ))
   done
+  [ "$FAILS" == 0 ] || return 4 # Flatrate severity per base ID.
 }
 
 
