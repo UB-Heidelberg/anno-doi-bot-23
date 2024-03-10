@@ -1,8 +1,13 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
-CFG[doibot_log_dest_dir]="logs.@$HOSTNAME/$(date +%y%m)"
-CFG[doibot_rerun_state_dir]="logs.@$HOSTNAME/rerun_state"
+local LOG_BASEDIR="logs.@$HOSTNAME"
+local LOG_SUBDIR="$(printf '%(%y%m)T' "$BOT_START_UTS")"
+# ^-- We can safely use `local` because each doibot rc file
+#     runs in its own function scope.
 
+CFG[doibot_log_dest_dir]="$LOG_BASEDIR/$LOG_SUBDIR"
+
+CFG[doibot_rerun_state_dir]="$LOG_BASEDIR/rerun_state"
 CFG[doibot_rerun_min_delay]='0 days 0 hours 10 minutes 0 seconds'
 # If for some reason your scheduling mechanism¹ fires the cron task
 # too early, you can use this minimum delay to have the bot sleep
@@ -119,6 +124,10 @@ CFG[doibot_url_safe_chars]='!#%&()*+;=?@[]'
 
 
 
+CFG[doibot_rss_dest_dir]="$LOG_BASEDIR/rss"
+CFG[doibot_loglink_baseurl]="http://localhost/anno/doibot-logs/$LOG_SUBDIR/"
+# ^-- Base URL for logfile link in the error RSS feed.
+#     Should be an absolute URL for maximum compatibility with RSS clients.
 
 
 
