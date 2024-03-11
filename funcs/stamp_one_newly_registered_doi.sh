@@ -35,9 +35,21 @@ function stamp_one_newly_registered_doi () {
     )
   VAL="$(echo "$WF_BODY" | webfetch "${WF_REQ[@]}")" || return 4$(
     echo E: "Stamp web request failed with exit status $?." >&2)
-  echo "$VAL" | grep --silent ${CFG[doibot_stamp_reply_grep_flags]} \
-    --regexp="${CFG[doibot_stamp_reply_grep_success]}" || return 4$(
-      echo E: 'Stamp reply does not indicate success.' >&2)
+
+  if ! verify_stamp_reply_success < <(echo "$VAL"); then
+    echo "$VAL" | log_dump stamp_failed.txt
+    VAL="${VAL//$'\r'/}"
+    VAL="${VAL//$'\n'/¶ }"
+    [ "${#VAL}" -le 128 ] || VAL="${VAL:0:128}…"
+    echo E: "Stamp reply does not indicate success. Message: $VAL" >&2
+    return 4
+  fi
+}
+
+
+function verify_stamp_reply_success () {
+  grep --silent ${CFG[doibot_stamp_reply_grep_flags]} \
+    --regexp="${CFG[doibot_stamp_reply_grep_success]}" || return $?
 }
 
 
