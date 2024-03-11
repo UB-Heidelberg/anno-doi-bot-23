@@ -5,6 +5,7 @@ function log_dump () {
   local DUMP_DEST="${CFG[doibot_log_dest_dir]}/$1"
   cat >"$DUMP_DEST" || return $?$(
     echo E: "Failed to dump debug file: $DUMP_DEST" >&2)
+  echo D: "Dump file saved: $(du --bytes -- "$DUMP_DEST")"
 }
 
 
