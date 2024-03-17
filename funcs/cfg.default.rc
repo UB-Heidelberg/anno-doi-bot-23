@@ -152,6 +152,12 @@ CFG[doibot_loglink_baseurl]="http://localhost/anno/doibot-logs/$LOG_SUBDIR/"
 
 
 
+CFG[json_prettify_prog]="$(which json-sort-pmb jq cat |& grep -m 1 -Pe '^/')"
+# ^-- Introduced for the DataCite adapter's debug features,
+# but it's probably more future-proof to have this be a common
+# config option for all adapters and maybe also the bot itself.
+
+
 
 
 
