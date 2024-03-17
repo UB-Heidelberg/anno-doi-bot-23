@@ -44,26 +44,55 @@ function wait_until_uts () {
   [ "${UNTIL:-0}" -ge 1 ] || return 0
   local WAIT=$(( UNTIL - EPOCHSECONDS ))
   [ "${WAIT:-0}" -ge 1 ] || return 0
-  logts P: "Gonna wait $WAIT seconds (until $(
-    printf '%(%F %T %Z)T' "$UNTIL")) $*"
-  sleep "$WAIT"s
+  exec -a doibot-rerun-sleep sleep "$WAIT"s &
+  local SLEEP_PID=$!
+  logts P: "Waiting $WAIT seconds (until $(printf '%(%F %T %Z)T' "$UNTIL"
+    ), sleep pid: $SLEEP_PID) $*"
+  wait "$SLEEP_PID" 2>/dev/null
+  local SLEEP_RV=$?
+  local SIG=$(( SLEEP_RV - 128 ))
+  if [ "$SIG" -lt 0 ]; then
+    SIG=
+  else
+    # Our `sleep` was killed by a signal. Translate signal number to name
+    # because the numbers differ accross CPU architectures.
+    # (cf. man 7 signal, man 1 kill)
+    SIG="$(kill -l $SIG)"
+    SIG="${SIG#SIG}"
+  fi
+  case "${SIG:-$SLEEP_RV}" in
+    USR1 | \
+    ALRM | \
+    0 ) ;;
+
+    HUP | \
+    * )
+      [ -z "$SIG" ] || SIG=" (probably killed by SIG$SIG)"
+      echo E: $FUNCNAME: "failed to sleep, rv=$SLEEP_RV$SIG" >&2
+      return 4;;
+  esac
+  [ "$EPOCHSECONDS" -ge "$UNTIL" ] || return 4$(
+    echo E: $FUNCNAME: "sleep finished too early." >&2)
 }
 
 
 function with_rerun_state__inner_fail_score () {
-  wait_until_uts "${RERUN_STATE[earliest_next_run]}" \
-    'because the rerun state file says so.'
+  local WAIT='because the rerun state file says so.'
+  local EARLIEST="${RERUN_STATE[earliest_next_run]:-0}"
+  wait_until_uts "$EARLIEST" "$WAIT" || return 4$(
+    echo E: "Failed to wait for earliest_next_run, rv=$?" >&2)
 
-  local WAIT="${CFG[doibot_rerun_min_delay]}"
-  if [ -n "$WAIT" ]; then
-    WAIT="$(date +%s --date="+$WAIT")"
-    if [ "${RERUN_STATE[earliest_next_run]}" -gt "$WAIT" ]; then
-      echo W: "Flinching from decreasing earliest_next_run" \
-        "to calculated new value $WAIT. Keeping old value:" \
-        "${RERUN_STATE[earliest_next_run]}" >&2
-    else
-      RERUN_STATE[earliest_next_run]="$WAIT"
-    fi
+  WAIT="${CFG[doibot_rerun_min_delay]}"
+  [ -n "$WAIT" ] || return 4$(
+    echo E: 'Empty doibot_rerun_min_delay' >&2)
+  WAIT="$(date +%s --date="+$WAIT")"
+  [ -n "$WAIT" ] || return 4$(
+    echo E: 'Failed to calculate earliest_next_run' >&2)
+  if [ "$EARLIEST" -gt "$WAIT" ]; then
+    echo W: "Flinching from decreasing earliest_next_run" \
+      "to calculated new value $WAIT. Keeping old value: $EARLIEST" >&2
+  else
+    RERUN_STATE[earliest_next_run]="$WAIT"
   fi
 
   local FAIL_SCORE=0
