@@ -16,8 +16,8 @@ function cli_main () {
   bot_init_before_config || return $?
   source_in_func "$BOT_FUNCD"/cfg.default.rc || return $?
   load_host_config doibot || return $?
-  "${CFG[task]}" "$@" || return $?$(
-    echo E: "Bot task '"${CFG[task]}"' failed, rv=$?" >&2)
+  "${CFG[task]}" "$@" || return $?$(echo E: "Bot task failed (rv=$?):$(
+    printf ' ‹%s›' "${CFG[task]}" "$@")" >&2)
 }
 
 

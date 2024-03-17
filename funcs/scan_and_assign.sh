@@ -3,9 +3,9 @@
 
 
 function scan_and_assign () {
-  local RSS_URL="${CFG[anno_baseurl]}by/has_stamp;rss=vh/_ubhd:doiAssign"
+  local RSS_URL="bot-auth:by/has_stamp;rss=vh/_ubhd:doiAssign"
   logts P: "Scan RSS feed: $RSS_URL"
-  local RSS_RAW="$(webfetch --bot-auth -- "$RSS_URL")"
+  local RSS_RAW="$(webfetch "$RSS_URL")"
   local RSS_XML="${RSS_RAW//[$'\r\n \t']/ }"
   case "$RSS_XML" in
     *'<rss '*'>'*'<channel>'*'</channel>'*'</rss>'* ) ;;
@@ -39,8 +39,8 @@ function scan_and_assign () {
 
 function scan_and_assign__found_link () {
   logts P: "Follow VH link: $VH_LINK"
-  [[ "$VH_LINK" == "${CFG[anno_baseurl]}"* ]] || return 3$(
-    echo E: 'Link not inside base URL!' >&2)
+  [[ "$VH_LINK" == "${CFG[anno_public_baseurl]}"* ]] || return 3$(
+    echo E: 'Link not inside anno_public_baseurl!' >&2)
 
   local RGX='/([A-Za-z0-9_.-]+)/versions$'
   local ANNO_BASE_ID=
@@ -48,7 +48,7 @@ function scan_and_assign__found_link () {
   [ -n "$ANNO_BASE_ID" ] || return 5$(
     echo E: "Failed to detect anno base ID from VH link." >&2)
 
-  local ORIG_VH_REPLY="$(webfetch --bot-auth -- "$VH_LINK")"
+  local ORIG_VH_REPLY="$(webfetch -- "$VH_LINK")"
   # log_dump <<<"$ORIG_VH_REPLY" "vh-reply.$ANNO_BASE_ID.json" || return $?
 
   local LIST=()
@@ -109,7 +109,7 @@ function scan_and_assign__vh_entry () {
   fi
 
   echo P: "  • $TRACE_ENT: download…"
-  local ANNO_JSON="$(webfetch --bot-auth -- "$ANNO_ID_URL")"
+  local ANNO_JSON="$(webfetch -- "$ANNO_ID_URL")"
   [ -n "$ANNO_JSON" ] || return 6$(
     echo E: "Failed to request anno: $ANNO_ID_URL" >&2)
   # log_dump <<<"$ANNO_JSON" "anno.$ANNO_BASE_ID~$VHE_NUM.json" || return $?

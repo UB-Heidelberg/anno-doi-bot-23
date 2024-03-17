@@ -3,12 +3,17 @@
 
 
 function webfetch () {
+  local ABU="${CFG[doibot_auth_baseurl]}"
+  [ -n "$ABU" ] || ABU="${CFG[anno_public_baseurl]}"
+  [ -n "$ABU" ] || return 4$(echo E: 'Empty doibot_auth_baseurl' >&2)
   local CURL_OPT=(
     --silent
     --user-agent "${CFG[doibot_useragent]}"
     )
+  local LATE_ARGS=()
   while [ "$#" -ge 1 ]; do case "$1" in
-    --bot-auth )
+    bot-auth:* )
+      LATE_ARGS+=( "$ABU${1#*:}" )
       webfetch__set_custom_headers "${CFG[doibot_auth_headers]}"
       shift;;
     --header=* ) webfetch__set_custom_headers "${1#*=}"; shift;;
@@ -17,8 +22,9 @@ function webfetch () {
     -* ) echo "E: $FUNCNAME: Unsupported option: $1" >&2; return 6;;
     * ) break;;
   esac; done
-  # echo D: >&2 curl "${CURL_OPT[@]}" "$@" || return $?
-  curl "${CURL_OPT[@]}" "$@" || return $?
+  CURL_OPT+=( "$@" "${LATE_ARGS[@]}" )
+  # echo D: >&2 curl "${CURL_OPT[@]}" || return $?
+  curl "${CURL_OPT[@]}" || return $?
 }
 
 

@@ -6,9 +6,8 @@ function stamp_one_newly_registered_doi () {
   [ -n "${STAMP_META[bare_doi]}" ] || return 5$(echo E: $FUNCNAME >&2 \
     'Empty DOI in STAMP_META or STAMP_META is not a dictionary!')
 
-  local URL="${CFG[doibot_stamp_baseurl]}"
-  [ -n "$URL" ] || URL="${CFG[anno_baseurl]}"
-  URL+="${STAMP_META[anno_vers_id]}"
+  local VERS_ID="${STAMP_META[anno_vers_id]}"
+  [ -n "$VERS_ID" ] || return 4$(echo E: $FUNCNAME: 'Empty meta anno_vers_id' >&2)
 
   safechars_verify_dict_entries STAMP_META \
     anno_id_url:url \
@@ -26,12 +25,11 @@ function stamp_one_newly_registered_doi () {
   done
 
   local WF_REQ=(
-    --bot-auth
+    "bot-auth:$VERS_ID"
     --header="${CFG[doibot_stamp_headers]}"
     --- # start of verbatim curl options
     --request "${CFG[doibot_stamp_http_verb]}"
     --data-binary '@-'
-    -- "$URL"
     )
   VAL="$(<<<"$WF_BODY" webfetch "${WF_REQ[@]}")" || return 4$(
     echo E: "Stamp web request failed with exit status $?." >&2)
