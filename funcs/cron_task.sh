@@ -7,7 +7,7 @@ function cron_task () {
   setup_logfile_tee || return $?
 
   local RV=0
-  with_rerun_state_fail_score scan_and_assign || RV+=4
+  RRS_TOPIC="$FUNCNAME" with_rerun_state_fail_score scan_and_assign || RV+=4
 
   # generate_rss_reports || RV+=4
 
