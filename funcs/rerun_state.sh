@@ -57,7 +57,13 @@ function with_rerun_state__inner_fail_score () {
   local WAIT="${CFG[doibot_rerun_min_delay]}"
   if [ -n "$WAIT" ]; then
     WAIT="$(date +%s --date="+$WAIT")"
-    RERUN_STATE[earliest_next_run]="$WAIT"
+    if [ "${RERUN_STATE[earliest_next_run]}" -gt "$WAIT" ]; then
+      echo W: "Flinching from decreasing earliest_next_run" \
+        "to calculated new value $WAIT. Keeping old value:" \
+        "${RERUN_STATE[earliest_next_run]}" >&2
+    else
+      RERUN_STATE[earliest_next_run]="$WAIT"
+    fi
   fi
 
   local FAIL_SCORE=0
