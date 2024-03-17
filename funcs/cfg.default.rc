@@ -62,6 +62,18 @@ CFG[doibot_auth_headers]='
 # stamp base URL points to a server that might reply with a redirect,
 # your headers may leak credentials to servers in the redirect chain.
 
+CFG[doibot_stamp_url]='bot-auth:<°anno_vers_id>'
+# ^-- The URL for where to submit the DOI stamp.
+# Data slot syntax is the same as for `doibot_stamp_body_template`
+# described below. If a prefix of `bot-auth:` is used, it will be
+# replaced with the `doibot_auth_baseurl` setting and requests will
+# be sent with bot authentification.
+#
+# For debugging, plain text data URLs may be used, e.g.
+# CFG[doibot_stamp_url]='data:text/plain,{"st_at":"fake","doi":"<°bare_doi>"}'
+# CFG[doibot_stamp_url]='data:text/plain;base64,UGFnZSBub3QgZm91bmQgKDQwNCkK'
+
+
 CFG[doibot_stamp_http_verb]='PATCH'
 
 CFG[doibot_stamp_headers]='

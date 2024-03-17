@@ -16,16 +16,18 @@ function stamp_one_newly_registered_doi () {
     dest_url:url \
     || return $?
 
+  local WF_URL="${CFG[doibot_stamp_url]}"
   local WF_BODY="${CFG[doibot_stamp_body_template]}"
   local MARK="${CFG[doibot_stamp_slot_marker]}"
   local KEY= VAL=
   for KEY in "${!STAMP_META[@]}"; do
     VAL="${STAMP_META["$KEY"]}"
+    WF_URL="${WF_URL//"<$MARK$KEY>"/"$VAL"}"
     WF_BODY="${WF_BODY//"<$MARK$KEY>"/"$VAL"}"
   done
 
   local WF_REQ=(
-    "bot-auth:$VERS_ID"
+    "$WF_URL"
     --header="${CFG[doibot_stamp_headers]}"
     --- # start of verbatim curl options
     --request "${CFG[doibot_stamp_http_verb]}"
