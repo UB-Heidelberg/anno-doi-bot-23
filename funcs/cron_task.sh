@@ -12,7 +12,6 @@ function cron_task () {
   # generate_rss_reports || RV+=4
 
   rechown_logsdir || RV+=4
-  [ "$RV" == 0 ] || echo E: 'DOI bot cron task failed!' >&2
   return "$RV"
 }
 
