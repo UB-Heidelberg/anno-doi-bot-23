@@ -73,6 +73,9 @@ function scan_and_assign__found_link () {
         "Error while processing VH entry #$VHE_NUM" >&2)
   done
   [ "$VHE_NUM" -ge 1 ] || return 4$(echo E: 'Found no VH entries.' >&2)
+  [ "${VHE_MEM[lvr:anno_id_url]}" == 0 ] \
+    || scan_and_assign__reg_lvr_doi || return $?
+
   scan_and_assign__stamp_newly_registered_dois || return $?
 
   # VH_ACCUM="[$VH_ACCUM]"
@@ -118,6 +121,8 @@ function scan_and_assign__vh_entry () {
   local REG_DOI="$OLD_DOI"
   local DOI_TARGET_URL="$ANNO_ID_URL"
   VHE_MEM["$VHE_NUM":anno_id_url]="$ANNO_ID_URL"
+  VHE_MEM[lvr:anno_id_url]="$ANNO_ID_URL"
+  VHE_MEM[lvr:anno_json]="$ANNO_JSON"
   VHE_MEM["$VHE_NUM":doi_target_url]="$DOI_TARGET_URL"
   if [ -n "$OLD_DOI" ]; then
     echo P: "    • adapter: update existing DOI: <$OLD_DOI>"
@@ -145,6 +150,17 @@ function scan_and_assign__reg_one_doi () {
     # anno_base_id="$ANNO_BASE_ID"
     # anno_ver_num="$VHE_NUM"
     anno_doi_expect="$REG_DOI"
+    )
+  case "$DOI_TARGET_URL" in
+    'anno-fx:latest' )
+      REG_CMD+=(
+        anno_ver_fx='lvr'
+        anno_custom_url="$DOI_TARGET_URL"
+        )
+      DOI_TARGET_URL="${VHE_MEM[lvr:anno_id_url]}"
+      ;;
+  esac
+  REG_CMD+=(
     anno_doi_targeturl="$DOI_TARGET_URL"
     "${CFG[doibot_adapter_prog]}"
     ${CFG[doibot_adapter_args]}
@@ -213,6 +229,18 @@ function scan_and_assign__report_warnings () {
       <<<"$MSG" sed -re '/^P: /d' | nl -ba | sed -re 's~^~W: > ~' >&2
       ;;
   esac
+}
+
+
+function scan_and_assign__reg_lvr_doi () {
+  # lvr = Latest Version Redirect
+  local ANNO_JSON="${VHE_MEM[lvr:anno_json]}"
+  [ -n "$ANNO_JSON" ] || return 4$(
+    echo E: $FUNCNAME: 'No cached ANNO_JSON for LVR!' >&2)
+  local REG_DOI="${CFG[anno_doi_prefix]}$ANNO_BASE_ID${CFG[anno_doi_suffix]}"
+  local DOI_TARGET_URL='anno-fx:latest'
+  scan_and_assign__reg_one_doi || return $?$(
+    echo E: 'Failed to update LVR DOI.' >&2)
 }
 
 
