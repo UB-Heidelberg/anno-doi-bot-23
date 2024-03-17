@@ -19,9 +19,31 @@ CFG[doibot_rerun_min_delay]='0 days 0 hours 10 minutes 0 seconds'
 # monitoring software will always have the failed container.)
 
 
+CFG[anno_public_baseurl]='http://localhost:33321/anno/'
+# ^-- Expected prefix for DOI redirect URLs.
+# This is a safeguard against accidential misconfiguration and bugs.
+# The RSS feed is expected to link to URLs inside this namespace even
+# if it is requested via privileged access on a different URL.
+
+
 CFG[anno_url_versep]='~'
 
-CFG[anno_baseurl]='http://localhost:33321/anno/'
+CFG[doibot_auth_baseurl]='http://localhost:33321/anno/'
+# ^-- The URL for privileged bot access to the anno server's
+# anno namespace. If empty, `anno_public_baseurl` is used.
+#
+# In most setups, we will need some kind of authorization for the
+# anno server to accept our stamp requests. This might be a base URL
+# that includes a username and password for HTTP basic auth, or a
+# base URL that bypasses the authentification.
+#
+# An example for the latter approach is the docker-compose example
+# project in the documentation for `anno-server-22`. It uses the
+# `DOCKER_DOIBOT_CFG_OVERRIDES` line below to override this setting
+# with a URL based on the anno server's service name, which can be
+# used as a hostname inside the docker-compose network. This direct
+# access allows the DOI bot to use any username header unchallenged.
+
 CFG[doibot_useragent]='doibot23'
 
 CFG[doibot_auth_headers]='
@@ -39,19 +61,6 @@ CFG[doibot_auth_headers]='
 # Headers configured here are sent in all stamp requests. If your
 # stamp base URL points to a server that might reply with a redirect,
 # your headers may leak credentials to servers in the redirect chain.
-
-CFG[doibot_stamp_baseurl]=''
-# ^-- When empty, `anno_baseurl` is used.
-# In most setups, we will need some kind of authorization for the
-# anno server to accept our stamp requests. This might be a base URL
-# that includes a username and password for HTTP basic auth, or a
-# base URL that bypasses the authentification.
-# An example for the latter approach is the docker-compose example
-# project in the documentation for `anno-server-22`. It uses the
-# `DOCKER_DOIBOT_CFG_OVERRIDES` line below to override this setting
-# with a URL based on the anno server's service name, which can be
-# used as a hostname inside the docker-compose network. This direct
-# access allows the DOI bot to use any username header unchallenged.
 
 CFG[doibot_stamp_http_verb]='PATCH'
 
