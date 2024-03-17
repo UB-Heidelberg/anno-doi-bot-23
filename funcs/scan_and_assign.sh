@@ -149,6 +149,7 @@ function scan_and_assign__reg_one_doi () {
     "${CFG[doibot_adapter_prog]}"
     ${CFG[doibot_adapter_args]}
     )
+  [ "$DBGLV" -lt 4 ] || local -p
   local REG_MSG= REG_RV= # pre-declare
   REG_MSG="$(<<<"$ANNO_JSON" "${REG_CMD[@]}" 2>&1)"; REG_RV=$?
   local LAST_LINE="${REG_MSG##*$'\n'}"
