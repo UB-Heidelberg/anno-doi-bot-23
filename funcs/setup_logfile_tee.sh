@@ -5,8 +5,9 @@ function setup_logfile_tee () {
   [ -n "$LOG_TOPIC" ] || local LOG_TOPIC="${FUNCNAME[1]}"
   local LOGS_DIR="${CFG[doibot_log_dest_dir]}"
   mkdir --parents -- "$LOGS_DIR"
-  local DEST="$LOGS_DIR/$LOG_TOPIC.$(
-    printf '%(%y%m%d-%H%M%S)T' -1).$$.txt"
+  local DEST="$LOG_TOPIC.$(printf '%(%y%m%d-%H%M%S)T' -1).$$.txt"
+  CFG[logtee_subpath]="$DEST"
+  DEST="$LOGS_DIR/$DEST"
   echo D: "Log file will be: $DEST"
   >>"$DEST" || return $?$(
     echo E: "Failed write-append test for logfile: $DEST" >&2)
