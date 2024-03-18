@@ -1,7 +1,7 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 local LOG_BASEDIR="logs.@$HOSTNAME"
-local LOG_SUBDIR="$(printf '%(%y%m)T' "$BOT_START_UTS")"
+local LOG_SUBDIR="$(printf '%(%y%m)T' "${BOTRUN[start_uts]}")"
 # ^-- We can safely use `local` because each doibot rc file
 #     runs in its own function scope.
 
