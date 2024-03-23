@@ -118,15 +118,39 @@ function with_rerun_state__inner_fail_score () {
   local FAIL_SCORE=0
   "$@"; FAIL_SCORE+=$?
   if [ "$FAIL_SCORE" -lt 1 ]; then
-    RERUN_STATE[fail_score]=0
-    echo D: "Cumulative fail score has been reset."
+    if [ "${RERUN_STATE[fail_score]}" != 0 ]; then
+      RERUN_STATE[fail_score]=0
+      echo D: "Cumulative fail score has been reset."
+    fi
+    with_rerun_state__set_rss healthy || true
   else
     let FAIL_SCORE="${RERUN_STATE[fail_score]} + $FAIL_SCORE"
     RERUN_STATE[fail_score]="$FAIL_SCORE"
     echo W: "Cumulative fail score increased to $FAIL_SCORE." >&2
+    if [ "$FAIL_SCORE" -lt "${CFG[doibot_rss_warnlevel]}" ]; then
+      with_rerun_state__set_rss --no-replace 'minor trouble' || true
+    else
+      with_rerun_state__set_rss FAILING || true
+    fi
   fi
   [ -z "$WAIT" ] || echo D: "Schedule for earliest next run is set to $(
     printf '%(%F %T %Z)T' "$WAIT")."
+}
+
+
+function with_rerun_state__set_rss () {
+  local FEED='status'
+  rssfeed_init || return $?
+  # Now that $FEED has been adjusted to a full path, we can use that:
+  local MSG='<item><title>'
+  if [ "$1" == --no-replace ]; then
+    shift
+    grep -qFe "$MSG" -- "$FEED" && return 0
+  fi
+  MSG+="$1</title>"
+  grep -qFe "$MSG" -- "$FEED" && return 0
+  MSG="  $MSG<pubDate>$(date -R)</pubDate></item>"$'\n'
+  rssfeed_init ITEMS="$MSG" || return $?
 }
 
 

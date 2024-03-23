@@ -151,6 +151,11 @@ CFG[doibot_loglink_baseurl]="http://localhost/anno/doibot-logs/$LOG_SUBDIR/"
 #     Should be an absolute URL for maximum compatibility with RSS clients.
 
 
+CFG[doibot_rss_warnlevel]=16
+# ^-- Minimum fail score at which to flip the `status.rss` headline from
+# "healthy" to "FAILING". Higher values give more tolerance for temporary
+# failures. The related log message is "Cumulative fail score increased to …".
+
 
 CFG[json_prettify_prog]="$(which json-sort-pmb jq cat |& grep -m 1 -Pe '^/')"
 # ^-- Introduced for the DataCite adapter's debug features,
