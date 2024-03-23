@@ -6,7 +6,7 @@ function setup_logfile_tee () {
   local LOGS_DIR="${CFG[doibot_log_dest_dir]}"
   mkdir --parents -- "$LOGS_DIR"
   local DEST="$LOG_TOPIC.$(printf '%(%y%m%d-%H%M%S)T' -1).$$.txt"
-  CFG[logtee_subpath]="$DEST"
+  BOTRUN[logtee_subpath:"$LOG_TOPIC"]="$DEST"
   DEST="$LOGS_DIR/$DEST"
   echo D: "Log file will be: $DEST"
   >>"$DEST" || return $?$(

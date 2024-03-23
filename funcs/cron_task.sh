@@ -9,7 +9,8 @@ function cron_task () {
   local RV=0
   RRS_TOPIC="$FUNCNAME" with_rerun_state_fail_score scan_and_assign || RV+=4
 
-  # generate_rss_reports || RV+=4
+  generate_rss_reports "${CFG[doibot_log_dest_dir]}/$(
+    )${BOTRUN[logtee_subpath:$FUNCNAME]}" || RV+=4
 
   rechown_logsdir || RV+=4
   return "$RV"
