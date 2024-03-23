@@ -7,13 +7,11 @@ function scan_and_assign () {
   logts P: "Scan RSS feed: $RSS_URL"
   local RSS_RAW="$(webfetch "$RSS_URL")"
   local RSS_XML="${RSS_RAW//[$'\r\n \t']/ }"
-  case "$RSS_XML" in
-    *'<rss '*'>'*'<channel>'*'</channel>'*'</rss>'* ) ;;
-    * )
-      log_dump rss.xml <<<"$RSS_RAW"
-      echo E: "No RSS channel in feed response." >&2
-      return 2;;
-  esac
+  if ! rssfeed_has_channel <<<"$RSS_XML"; then
+    log_dump rss.xml <<<"$RSS_RAW"
+    echo E: "No RSS channel in feed response." >&2
+    return 2
+  fi
   local RSS_LINKS=()
   readarray -t RSS_LINKS < <(<<<"$RSS_XML" grep -oPe '<link>[^<>]+')
 
